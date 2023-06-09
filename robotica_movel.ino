@@ -27,25 +27,37 @@ Bridge bridge = {FRONT_LEFT, REAR_LEFT, PWM_LEFT, FRONT_RIGHT, REAR_RIGHT, PWM_R
 #define MIN_SETPOINT 300
 #define MAX_SETPOINT MIN_SETPOINT + 100
 
-long distance;
+long frontDistance;
+long leftDistance;
+long rightDistance;
 
 void setup() {
+  Serial.begin(2000000);
+
   setupBridge(&bridge);
+
   setupSensor(&front);
   setupSensor(&left);
   setupSensor(&right);
 }
 
 void loop() {
-  distance = getDistance(&front);
+  getDistances();
 
-  if (distance < MIN_SETPOINT) {
-    moveBackward(&bridge, 0);
-  } else if (distance > MAX_SETPOINT) {
-    moveForward(&bridge, 0);
-  } else {
-    stop(&bridge);
-  }
+  Serial.print("Frente:\t\t");
+  Serial.println(frontDistance);
 
-  delay(100);
+  Serial.print("Esquerda:\t");
+  Serial.println(leftDistance);
+
+  Serial.print("Direita:\t");
+  Serial.println(rightDistance);
+
+  delay(1000);
+}
+
+void getDistances() {
+  frontDistance = getDistance(&front);
+  leftDistance = getDistance(&left);
+  rightDistance = getDistance(&right);
 }
