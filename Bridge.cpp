@@ -27,14 +27,14 @@ void moveBackward(int front, int rear, int pwm, int speed) {
   analogWrite(pwm, speed);
 }
 
-void moveForward(Bridge *b, int speed) {
-  moveForward(b->frontLeft, b->rearLeft, b->pwmLeft, speed);
-  moveForward(b->frontRight, b->rearRight, b->pwmRight, speed);
+void moveForward(Bridge *b, int speed, int diff) {
+  moveForward(b->frontLeft, b->rearLeft, b->pwmLeft, speed + diff);
+  moveForward(b->frontRight, b->rearRight, b->pwmRight, speed - diff);
 }
 
-void moveBackward(Bridge *b, int speed) {
-  moveBackward(b->frontLeft, b->rearLeft, b->pwmLeft, speed);
-  moveBackward(b->frontRight, b->rearRight, b->pwmRight, speed);
+void moveBackward(Bridge *b, int speed, int diff) {
+  moveBackward(b->frontLeft, b->rearLeft, b->pwmLeft, speed - diff);
+  moveBackward(b->frontRight, b->rearRight, b->pwmRight, speed + diff);
 }
 
 void turnLeft(Bridge *b, int speed) {

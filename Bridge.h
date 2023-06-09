@@ -12,8 +12,8 @@ typedef struct {
 
 void setupBridge(Bridge *b);
 
-void moveForward(Bridge *b, int speed);
-void moveBackward(Bridge *b, int speed);
+void moveForward(Bridge *b, int speed, int diff);
+void moveBackward(Bridge *b, int speed, int diff);
 
 void turnLeft(Bridge *b, int speed);
 void turnRight(Bridge *b, int speed);
