@@ -33,11 +33,17 @@ Bridge bridge = {FRONT_LEFT, REAR_LEFT, PWM_LEFT, FRONT_RIGHT, REAR_RIGHT, PWM_R
 #define MIN_SETPOINT 300
 #define MAX_SETPOINT MIN_SETPOINT + 100
 
+#define SAMPLE_TIME 100
+
 long frontDistance;
 long leftDistance;
 long rightDistance;
 
 long diff;
+
+long finalDestination[] = {2147483647, -2147483648};
+long currentPosition[2];
+int direction[] = {1, 0};
 
 void setup() {
   setupBridge(&bridge);
@@ -45,20 +51,27 @@ void setup() {
   setupSensor(&front);
   setupSensor(&left);
   setupSensor(&right);
+
+  finalDestination[0] = 800;
+  finalDestination[1] = 0;
 }
 
 void loop() {
-  getDistances();
 
-  if (frontDistance < MIN_SETPOINT) {
-    moveBackward();
-  } else if (frontDistance > MAX_SETPOINT) {
+  while (finalDestination[0] > currentPosition[0] ) {
     moveForward();
-  } else {
-    stop();
+  }
+  
+  finalDestination[0] = 0;
+
+  turnLeft();
+  turnLeft();
+
+  while (finalDestination[0] < currentPosition[0] ) {
+    moveForward();
   }
 
-  delay(100);
+  while(1);
 }
 
 void getDistances() {
@@ -72,27 +85,71 @@ void getDistances() {
 }
 
 void turnLeft() {
-  turnLeft(&bridge, 255);
-  delay(100);
+  turnLeft(&bridge, SPEED);
+  delay(500);
   stop(&bridge);
+
+  if (direction[0] == 1) {
+    direction[0] = 0;
+    direction[1] = -1;
+  } else if (direction[0] == -1) {
+    direction[0] = 0;
+    direction[1] = 1;
+  } else if (direction[1] == 1) {
+    direction[0] = 1;
+    direction[1] = 0;
+  } else if (direction[1] == -1) {
+    direction[0] = -1;
+    direction[1] = 0;
+  }
 }
 
 void turnRight() {
-  turnRight(&bridge, 255);
-  delay(100);
+  turnRight(&bridge, SPEED);
+  delay(500);
   stop(&bridge);
+
+  if (direction[0] == 1) {
+    direction[0] = 0;
+    direction[1] = 1;
+  } else if (direction[0] == -1) {
+    direction[0] = 0;
+    direction[1] = -1;
+  } else if (direction[1] == 1) {
+    direction[0] = -1;
+    direction[1] = 0;
+  } else if (direction[1] == -1) {
+    direction[0] = 1;
+    direction[1] = 0;
+  }
 }
 
 void moveForward() {
   // speed: 60 diff: 10
   // speed: 80 diff: 13
   moveForward(&bridge, SPEED, SPEED * OFFSET_FACTOR + diff);
+
+  long start = millis();
+  while (millis() - start < SAMPLE_TIME);
+
+  stop(&bridge);
+
+  currentPosition[0] += SPEED * direction[0];
+  currentPosition[1] += SPEED * direction[1];
 }
 
 void moveBackward() {
   // speed: 60 diff: -10
   // speed: 60 diff: -13
   moveBackward(&bridge, SPEED, -SPEED * OFFSET_FACTOR + diff);
+
+  long start = millis();
+  while (millis() - start < SAMPLE_TIME);
+
+  stop(&bridge);
+
+  currentPosition[0] -= SPEED * direction[0];
+  currentPosition[1] -= SPEED * direction[1];
 }
 
 void stop() {
