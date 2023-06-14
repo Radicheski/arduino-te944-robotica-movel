@@ -28,10 +28,12 @@ Ultrasonic right = {RIGHT_TRIGGER, RIGHT_ECHO};
 #define OFFSET_FACTOR 0.2
 #define SPEED 80
 
+#define TURN_DELAY 500
+
 Bridge bridge = {FRONT_LEFT, REAR_LEFT, PWM_LEFT, FRONT_RIGHT, REAR_RIGHT, PWM_RIGHT};
 
-#define MIN_SETPOINT 300
-#define MAX_SETPOINT MIN_SETPOINT + 100
+#define MIN_SETPOINT 50
+#define FREE_PATH_THRESHOLD 150
 
 #define SAMPLE_TIME 100
 
@@ -43,7 +45,18 @@ long diff;
 
 long finalDestination[] = {2147483647, -2147483648};
 long currentPosition[2];
+long nextPosition[2];
 int direction[] = {1, 0};
+
+typedef struct poi {
+  long x;
+  long y;
+  int dx;
+  int dy;
+  poi *next;
+} POI;
+
+POI *lastPoi = NULL;
 
 void setup() {
   setupBridge(&bridge);
@@ -51,27 +64,17 @@ void setup() {
   setupSensor(&front);
   setupSensor(&left);
   setupSensor(&right);
-
-  finalDestination[0] = 800;
-  finalDestination[1] = 0;
 }
 
 void loop() {
+  getDistances();
 
-  while (finalDestination[0] > currentPosition[0] ) {
-    moveForward();
-  }
-  
-  finalDestination[0] = 0;
-
-  turnLeft();
-  turnLeft();
-
-  while (finalDestination[0] < currentPosition[0] ) {
+  if (frontDistance < MIN_SETPOINT) {
+    stop();
+  } else {
     moveForward();
   }
 
-  while(1);
 }
 
 void getDistances() {
@@ -81,12 +84,14 @@ void getDistances() {
 
   // speed: 60 diff: 50
   // speed: 80 diff: 37
-  diff = (rightDistance - leftDistance) / 37;
+  diff = rightDistance - leftDistance;
+  diff /= abs(diff);
+  diff *= 40;
 }
 
 void turnLeft() {
   turnLeft(&bridge, SPEED);
-  delay(500);
+  delay(TURN_DELAY);
   stop(&bridge);
 
   if (direction[0] == 1) {
@@ -106,7 +111,7 @@ void turnLeft() {
 
 void turnRight() {
   turnRight(&bridge, SPEED);
-  delay(500);
+  delay(TURN_DELAY);
   stop(&bridge);
 
   if (direction[0] == 1) {
@@ -154,4 +159,13 @@ void moveBackward() {
 
 void stop() {
   stop(&bridge);
+}
+
+void addPoi(int dx, int dy) {
+  POI p = {currentPosition[0], currentPosition[1], dx, dy, lastPoi};
+  lastPoi = &p;
+}
+
+void removeLastPoi() {
+  lastPoi = lastPoi->next;
 }

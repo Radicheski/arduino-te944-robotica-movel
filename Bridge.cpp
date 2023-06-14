@@ -28,13 +28,13 @@ void moveBackward(int front, int rear, int pwm, int speed) {
 }
 
 void moveForward(Bridge *b, int speed, int diff) {
-  moveForward(b->frontLeft, b->rearLeft, b->pwmLeft, speed + diff);
-  moveForward(b->frontRight, b->rearRight, b->pwmRight, speed - diff);
+  moveForward(b->frontLeft, b->rearLeft, b->pwmLeft, constrain(speed + diff, 80, 255));
+  moveForward(b->frontRight, b->rearRight, b->pwmRight, constrain(speed - diff, 80, 255));
 }
 
 void moveBackward(Bridge *b, int speed, int diff) {
-  moveBackward(b->frontLeft, b->rearLeft, b->pwmLeft, speed - diff);
-  moveBackward(b->frontRight, b->rearRight, b->pwmRight, speed + diff);
+  moveBackward(b->frontLeft, b->rearLeft, b->pwmLeft, constrain(speed - diff, 80, 255));
+  moveBackward(b->frontRight, b->rearRight, b->pwmRight, constrain(speed + diff, 80, 255));
 }
 
 void turnLeft(Bridge *b, int speed) {
