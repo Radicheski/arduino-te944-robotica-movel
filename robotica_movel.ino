@@ -162,6 +162,10 @@ void stop() {
 }
 
 void addPoi(int dx, int dy) {
+  if (abs(currentPosition[0] + currentPosition[1] - lastPoi->x - lastPoi->y) < 500) {
+    return;
+  }
+  
   POI p = {currentPosition[0], currentPosition[1], dx, dy, lastPoi};
   lastPoi = &p;
 }
