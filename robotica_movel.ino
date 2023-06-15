@@ -25,38 +25,23 @@ Ultrasonic right = {RIGHT_TRIGGER, RIGHT_ECHO};
 
 // speed: 80 factor: 0.2
 // speed: 160 factor 0.33
-#define OFFSET_FACTOR 0.2
-#define SPEED 80
+// #define OFFSET_FACTOR 0.25
+#define SPEED 60
 
-#define TURN_DELAY 500
+#define TURN_DELAY 200
 
 Bridge bridge = {FRONT_LEFT, REAR_LEFT, PWM_LEFT, FRONT_RIGHT, REAR_RIGHT, PWM_RIGHT};
 
 #define MIN_SETPOINT 50
 #define FREE_PATH_THRESHOLD 150
 
+#define DISTANCIA_MINIMA_OBSTACULO 150
+
 #define SAMPLE_TIME 100
 
 long frontDistance;
 long leftDistance;
 long rightDistance;
-
-long diff;
-
-long finalDestination[] = {2147483647, -2147483648};
-long currentPosition[2];
-long nextPosition[2];
-int direction[] = {1, 0};
-
-typedef struct poi {
-  long x;
-  long y;
-  int dx;
-  int dy;
-  poi *next;
-} POI;
-
-POI *lastPoi = NULL;
 
 void setup() {
   setupBridge(&bridge);
@@ -67,109 +52,76 @@ void setup() {
 }
 
 void loop() {
-  getDistances();
-
-  if (frontDistance < MIN_SETPOINT) {
-    stop();
+  if (detectarObstaculoFrontal()) {
+    contornarObstaculo();
   } else {
+    // moverParaFrente();
     moveForward();
   }
-
 }
 
-void getDistances() {
-  frontDistance = getDistance(&front);
-  leftDistance = getDistance(&left);
-  rightDistance = getDistance(&right);
+void contornarObstaculo() {
+  turnLeft();
+  while(detectarObstaculoEsquerda()) {
+    moveForward();
+  }
+  turnRight();
+}
 
-  // speed: 60 diff: 50
-  // speed: 80 diff: 37
-  diff = rightDistance - leftDistance;
-  diff /= abs(diff);
-  diff *= 40;
+int detectarObstaculoFrontal() {
+  // int leituraSensor = analogRead(SENSOR_FRONTAL_PINO);
+  frontDistance = getDistance(&front);
+  if (frontDistance < DISTANCIA_MINIMA_OBSTACULO) {
+    moveBackward();
+    delay(500);
+    return 1;  // Obstáculo detectado
+  } else {
+    return 0;  // Nenhum obstáculo detectado
+  }
+}
+
+int detectarObstaculoEsquerda() {
+  // int leituraSensor = analogRead(SENSOR_ESQUERDA_PINO);
+  leftDistance = getDistance(&left);
+  if (leftDistance < DISTANCIA_MINIMA_OBSTACULO) {
+    return 1;  // Obstáculo detectado
+  } else {
+    return 0;  // Nenhum obstáculo detectado
+  }
+}
+
+int detectarObstaculoDireita() {
+  // int leituraSensor = analogRead(SENSOR_DIREITA_PINO);
+  rightDistance = getDistance(&right);
+  if (rightDistance < DISTANCIA_MINIMA_OBSTACULO) {
+    return 1;  // Obstáculo detectado
+  } else {
+    return 0;  // Nenhum obstáculo detectado
+  }
 }
 
 void turnLeft() {
-  turnLeft(&bridge, SPEED);
+  turnLeft(&bridge, 100);
   delay(TURN_DELAY);
-  stop(&bridge);
-
-  if (direction[0] == 1) {
-    direction[0] = 0;
-    direction[1] = -1;
-  } else if (direction[0] == -1) {
-    direction[0] = 0;
-    direction[1] = 1;
-  } else if (direction[1] == 1) {
-    direction[0] = 1;
-    direction[1] = 0;
-  } else if (direction[1] == -1) {
-    direction[0] = -1;
-    direction[1] = 0;
-  }
 }
 
 void turnRight() {
-  turnRight(&bridge, SPEED);
+  turnRight(&bridge, 100);
   delay(TURN_DELAY);
-  stop(&bridge);
-
-  if (direction[0] == 1) {
-    direction[0] = 0;
-    direction[1] = 1;
-  } else if (direction[0] == -1) {
-    direction[0] = 0;
-    direction[1] = -1;
-  } else if (direction[1] == 1) {
-    direction[0] = -1;
-    direction[1] = 0;
-  } else if (direction[1] == -1) {
-    direction[0] = 1;
-    direction[1] = 0;
-  }
 }
 
 void moveForward() {
   // speed: 60 diff: 10
   // speed: 80 diff: 13
-  moveForward(&bridge, SPEED, SPEED * OFFSET_FACTOR + diff);
-
-  long start = millis();
-  while (millis() - start < SAMPLE_TIME);
-
-  stop(&bridge);
-
-  currentPosition[0] += SPEED * direction[0];
-  currentPosition[1] += SPEED * direction[1];
+  moveForward(&bridge, SPEED);
 }
 
 void moveBackward() {
   // speed: 60 diff: -10
   // speed: 60 diff: -13
-  moveBackward(&bridge, SPEED, -SPEED * OFFSET_FACTOR + diff);
-
-  long start = millis();
-  while (millis() - start < SAMPLE_TIME);
-
-  stop(&bridge);
-
-  currentPosition[0] -= SPEED * direction[0];
-  currentPosition[1] -= SPEED * direction[1];
+  moveBackward(&bridge, SPEED);
 }
 
 void stop() {
   stop(&bridge);
-}
-
-void addPoi(int dx, int dy) {
-  if (abs(currentPosition[0] + currentPosition[1] - lastPoi->x - lastPoi->y) < 500) {
-    return;
-  }
-  
-  POI p = {currentPosition[0], currentPosition[1], dx, dy, lastPoi};
-  lastPoi = &p;
-}
-
-void removeLastPoi() {
-  lastPoi = lastPoi->next;
 }
